@@ -1,0 +1,12 @@
+import {products} from '../data/catalog.js';
+import {brand} from '../config/brand.js';
+const key='aurevana-demo-v1';
+const read=()=>{try{return JSON.parse(localStorage.getItem(key)||'{}')}catch{return {}}};
+const old=read()||{};
+export const state={cart:Array.isArray(old.cart)?old.cart.filter(x=>products.some(p=>p.id===x.id)&&Number.isInteger(x.qty)&&x.qty>0).map(x=>({...x,qty:Math.min(99,x.qty)})):[],wish:Array.isArray(old.wish)?old.wish.filter(id=>products.some(p=>p.id===id)):[],recent:Array.isArray(old.recent)?old.recent:[],coupon:old.coupon===brand.coupon?brand.coupon:'',overlay:null,filters:{q:'',category:'',ingredient:'',max:'2000',sort:'featured'},qty:1,photo:0,review:0,order:null};
+export const save=()=>{try{localStorage.setItem(key,JSON.stringify({cart:state.cart,wish:state.wish,recent:state.recent,coupon:state.coupon}))}catch{}};
+export const getProduct=id=>products.find(p=>p.id===id);
+export const totals=()=>{const subtotal=state.cart.reduce((n,x)=>n+getProduct(x.id).price*x.qty,0);const discount=state.coupon===brand.coupon?Math.round(subtotal*brand.discount):0;const shipping=subtotal===0||subtotal>=brand.shippingThreshold?0:brand.shippingFee;return {subtotal,discount,shipping,total:subtotal-discount+shipping,count:state.cart.reduce((n,x)=>n+x.qty,0)}};
+export const add=(id,qty=1)=>{if(!getProduct(id))return;let item=state.cart.find(x=>x.id===id);if(item)item.qty=Math.min(99,item.qty+qty);else state.cart.push({id,qty:Math.min(99,qty)});save()};
+export const quantity=(id,delta)=>{let item=state.cart.find(x=>x.id===id);if(item){item.qty=Math.min(99,item.qty+delta);if(item.qty<=0)state.cart=state.cart.filter(x=>x.id!==id);save()}};
+export const toggleWish=id=>{if(!getProduct(id))return;state.wish=state.wish.includes(id)?state.wish.filter(x=>x!==id):[...state.wish,id];save()};
